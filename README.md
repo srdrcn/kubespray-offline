@@ -1,125 +1,129 @@
-# Kubespray offline file generator scripts
 
-## What's this?
+# Kubespray Offline Kurulum
 
-This is offline support scripts for [Kubespray offline environment](https://kubespray.io/#/docs/offline-environment).
+## Nedir ?
 
-This supports:
 
-* Download offline files.
-    - Download Yum/Deb repository files for OS packages.
-    - Download all container images used by Kubespray.
-    - Download PyPI mirror files for Kubespray.
-* Support scripts for target node.
-    - Install containerd from local file.
-    - Start up nginx container as web server to supply Yum/Deb repository and PyPI mirror.
-    - Start up docker private registry.
-    - Load all container images and push them to the private registry.
+Bu, [Kubespray offline environment](https://kubespray.io/#/docs/offline-environment) için offline kurulum dosyalarıdır.
 
-## Requirements
+Bu, şunları destekler:
+
+* Çevrimdışı dosyalarını indir.
+    - İşletim sistemine ait Yum/Deb repo dosyalarını indir.
+    - Kubespray tarafından kullanılan tüm container image'larını indir.
+    - Kubespray için PyPI mirror'larını indir.
+    - İndirilen dosyadan containerd'yi yükle.
+    - Yum/Deb deposu ve PyPI mirror'ını sağlamak için web sunucusu olarak nginx container'ını başlat.
+    - Docker private registry'i başlat.
+    - Tüm container image'larını yükle ve bunları private registery'e gönder.
+
+## Gereksinimler
 
 - RHEL 8 / AlmaLinux 8
 - Ubuntu 20.04 / 22.04
 
-## Download offline files
+## Offline gereksinim dosyaları indir
 
-Note: You must execute this process on same OS of k8s target nodes.
+Çevrimdışı dosyaları indirmeden önce, `config.sh` içindeki yapılandırmaları kontrol edin ve düzenleyin.
 
-Before download offline files, check and edit configurations in `config.sh`.
+Eğer container runtime (docker veya containerd) yoksa, önce onu kurun.
 
-If you don't have container runtime (docker or containerd), install it first.
+* Containerd  için
+    -  containerd ve nerdctl'yi kurmak için `install-containerd.sh` komutunu çalıştırın.
+    `config.sh` içinde `docker` ortam değişkenini `/usr/local/bin/nerdctl` olarak ayarlayın.
 
-* To use Docker CE
-    - run `install-docker.sh` to install Docker CE.
-* To use containerd
-    - run `install-containerd.sh` to install containerd and nerdctl.
-    - Set `docker` environment variable to `/usr/local/bin/nerdctl` in `config.sh`.
 
-Then, download all files:
+Daha sonra, tüm dosyaları indir:
 
     $ ./download-all.sh
 
-All artifacts are stored in `./outputs` directory.
+Tüm artifact'lar  `./outputs` dizininde saklanır.
 
-This script calls all of following scripts.
+Bu script, aşağıdaki tüm script dosyalarını çağırır.
 
 * prepare-pkgs.sh
-    - Setup python, etc.
+    - Python kur vs.
 * prepare-py.sh
-    - Setup python venv, install required python packages.
+    - Python venv ayarlayın, gerekli python paketlerini yükleyin.
 * get-kubespray.sh
-    - Download and extract kubespray, if KUBESPRAY_DIR does not exist.
+    - KUBESPRAY_DIR mevcut değilse, kubespray'i indirin ve çıkarın.
 * pypi-mirror.sh
-    - Download PyPI mirror files
+    - PyPI mirror dosyalarını indirin.
 * download-kubespray-files.sh
-    - Download kubespray offline files (containers, files, etc)
+    - Kubespray çevrimdışı dosyalarını (container, dosyalar, vb.) indir.
 * download-additional-containers.sh
-    - Download additional containers.
-    - You can add any container image repoTag to imagelists/*.txt.
+    - Ek konteynerleri indir.
+    - İstediğiniz konteyner görüntü repoTag'ını imagelists/*.txt'ye ekleyebilirsiniz.
 * create-repo.sh
-    - Download RPM or DEB repositories.
+    - RPM veya DEB repolarını indir.
 * copy-target-scripts.sh
-    - Copy scripts for target node.
+    - Hedef düğüm için komut dosyalarını kopyala.
 
 ## Target node support scripts
 
-Copy all contents in `outputs` directory to target node (which runs ansible).
-Then run following scripts in `outputs` directory. 
+`outputs` dizinindeki tüm içerikleri ansible'ı çalıştıran hedef düğüme kopyala.
+Daha sonra `outputs` dizininde aşağıdaki komut dosyalarını çalıştır.
 
 * setup-container.sh
-    - Install containerd from local files.
-    - Load nginx and registry images to containerd.
+    - Local dosyalardan containerd'yi yükle.
+    - Nginx ve registry görüntülerini containerd'ye yükle.
 * start-nginx.sh
-    - Start nginx container.
+    - Nginx container'ını başlat.
 * setup-offline.sh
-    - Setup yum/deb repo config and PyPI mirror config to use local nginx server.
+    - Local nginx sunucusunu kullanmak için yum/deb repo yapılandırmasını ve PyPI mirror yapılandırmasını ayarla.
 * setup-py.sh
-    - Install python3 and venv from local repo.
+    - Local repodan python3 ve venv'i yükle.
 * start-registry.sh
-    - Start docker private registry container.
+    -  docker private registry'yi başlat.
 * load-push-images.sh
-    - Load all container images to containerd.
-    - Tag and push them to the private registry.
+    - Tüm container image'larını containerd'ye yükle.
+    - Tag ve push işlemlerini yap.
 * extract-kubespray.sh
-    - Extract kubespray tarball and apply all patches.
+    - Kubespray tarball'ını çıkarın ve tüm patch'leri uygulayın.
 
-You can configure port number of nginx and private registry in config.sh.
+Nginx ve docker registry portlarını config.sh içinde yapılandırabilirsiniz.
 
-## Deploy kubernetes using Kubespray
 
-### Install required packages
+## Kubespray kullanarak kubernetes'i dağıtın
 
-Create and activate venv:
+### Gerekli paketleri yükleyin
 
-    # Example
+Venv oluşturun ve etkinleştirin:
+
+
+    # Örnek
     $ python3 -m venv ~/.venv/default
     $ source ~/.venv/default/bin/activate
 
-Note: For Ubuntu 20.04 and RHEL/CentOS 8, you need to use python 3.9.
+Not: Ubuntu 20.04 ve RHEL/CentOS 8 için python 3.9'u kullanmanız gerekir.
+
     
-    # Example
+    # Örnek
     $ python3.9 -m venv ~/.venv/default
     $ source ~/.venv/default/bin/activate
 
-Extract kubespray and apply patches:
+Kubespray'i çıkarın ve patch'leri uygulayın:
+
 
     $ ./extract-kubespray.sh
     $ cd kubespray-{version}
 
-For Ubuntu 22.04, you need to install build tools to build some python packages.
+Ubuntu 22.04 için, bazı python paketlerini derlemek için derleme paketlerine ihtiyacınız var.
+
 
     $ sudo apt install gcc python3-dev libffi-dev libssl-dev
 
-Install ansible:
+Ansible'ı yükleyin:
 
     $ pip install -U pip                # update pip
     $ pip install -r requirements.txt   # Install ansible
 
-### Create offline.yml
+### offline.yml oluşturun
 
-Create and place offline.yml file to your group_vars/all/offline.yml of your inventory directory.
+offline.yml dosyasını oluşturun ve envanter dizininizdeki group_vars/all/offline.yml dizinine yerleştirin.
 
-You need to change `YOUR_HOST` with your registry/nginx host IP.
+
+YOUR_HOSTu registry/nginx  IP'nizle değiştirmeniz gerekir.
 
 ```yaml
 http_server: "http://YOUR_HOST"
@@ -161,26 +165,27 @@ nerdctl_download_url: "{{ files_repo }}/nerdctl-{{ nerdctl_version }}-{{ ansible
 containerd_download_url: "{{ files_repo }}/containerd-{{ containerd_version }}-linux-{{ image_arch }}.tar.gz"
 ```
 
-Notes:
-* `runc_donwload_url` differ from kubespray official document, and must include `runc_version`.
-* The insecure registries configurations of containerd was changed from kubespray 2.23.0. You need to set `containerd_registries_mirrors` instead of `containerd_insecure_registries`. 
 
-### Deploy offline repo configurations
 
-Deploy offline repo configurations which use your yum_repo/ubuntu_repo to all target nodes using ansible.
+### Çevrimdışı repo yapılandırmalarını dağıtın
 
-First, copy offline setup playbook to kubespray directory. 
+Ansible kullanarak çevrimdışı repo yapılandırmalarını, yum_repo/ubuntu_repo'nuzu kullanan tüm hedef düğümlere dağıtın.
+
+Önce, çevrimdışı kurulum playbook'unu kubespray dizinine kopyalayın.
 
     $ cp -r ${outputs_dir}/playbook ${kubespray_dir}
 
-Then execute `offline-repo.yml` playbook.
+Daha sonra `offline-repo.yml` playbook çalıştırın.
+
+
 
     $ cd ${kubespray_dir}
     $ ansible-playbook -i ${your_inventory_file} offline-repo.yml
 
-### Run kubespray
+### Kubespray'i çalıştırın
+
 
 Run kubespray ansible playbook.
 
-    # Example  
+    # Örnek  
     $ ansible-playbook -i inventory/mycluster/hosts.yaml  --become --become-user=root cluster.yml
